@@ -23,7 +23,7 @@ if g_DefaultColor < 0 then print "!!!!DEBUG!!!! COLOR TXT VAR IS WRONG": end
 '--- print header
 PRINT "" 
 tmp1$ = strPadR("HOTDIR CX16 STYLE! V0.1 BETA",COL_WIDTH)   : PRINT REV_ON + tmp1$
-tmp1$ = strPadR(("CURRENT DIR --> " + CurDir$)  ,COL_WIDTH) : PRINT REV_ON + tmp1$
+tmp1$ = strPadR(("CURRENT DIR --> " + FixUpChars(CurDir$))  ,COL_WIDTH) : PRINT REV_ON + tmp1$
 
 '--- prep
 SetUpFileExtClrs()
@@ -35,9 +35,13 @@ DIM clearLine$ : clearLine$ = RPT$(" ",COL_WIDTH)
 
 '--- Print the files and folders
 g_FileCount = DIRLIST("*","*",LIST_ALL)
-for ii = 1 to g_FileCount
+FOR ii = 1 to g_FileCount
 	
 	fname$ = FixUpChars(DIRITEM())   '--- lcase$ or PETSCII or ??
+	IF LEN(fname$) = 0 THEN 
+		CONTINUE
+	END IF
+	
 	txtColor = GetColor4Ext(fname$)  '--- get color depending on file ext
 	
 	'--- clear line and print file name
@@ -60,11 +64,27 @@ for ii = 1 to g_FileCount
 NEXT 
 CLOSELIST()
 
-tmp1$ = REPLACE$("TTL FILES: <F> TTL DIRS: <D>","<F>",STR$(g_FileCount-g_DirCount-1))
-tmp1$ = REPLACE$(tmp1$,"<D>",STR$(g_DirCount+1))
+
+tmp1$ = REPLACE$("TTL FILES: <F> TTL DIRS: <D>","<F>",STR$(GetTtlFileCount()))
+tmp1$ = REPLACE$(tmp1$,"<D>",STR$(GetTtlDirCount()))
 PRINT REV_ON ; 
 PRINT strPadR(tmp1$,COL_WIDTH) '--- print footer
 END
+
+
+FUNCTION GetTtlFileCount() AS INT
+	IF g_FileCount = 0 AND g_DirCount = 0 THEN 
+		GetTtlFileCount = 0
+	ELSE
+		GetTtlFileCount = g_FileCount-g_DirCount-1
+	END IF
+END FUNCTION
+FUNCTION GetTtlDirCount() AS INT
+	GetTtlDirCount = 0
+	IF g_DirCount > 0 THEN 
+		GetTtlDirCount = g_DirCount + 1
+	END IF
+END FUNCTION
 
 
 '============================================================================================
