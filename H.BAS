@@ -57,6 +57,7 @@ FOR ii = 1 to g_FileCount
 		PRINT strPadL("<DIR>",10)
 	ELSE
 		PRINT FormatFileSize(STR$(DIRITEMSIZE()))
+		'PRINT "SIZE"
 	END IF
 	' TODO - add all file size together and show
 	COLOR g_DefaultColor '--- restore default color
@@ -76,14 +77,16 @@ FUNCTION GetTtlFileCount() AS INT
 	IF g_FileCount = 0 AND g_DirCount = 0 THEN 
 		GetTtlFileCount = 0
 	ELSE
-		GetTtlFileCount = g_FileCount-g_DirCount-1
+		GetTtlFileCount = g_FileCount - g_DirCount
 	END IF
 END FUNCTION
 FUNCTION GetTtlDirCount() AS INT
-	GetTtlDirCount = 0
-	IF g_DirCount > 0 THEN 
-		GetTtlDirCount = g_DirCount + 1
-	END IF
+	GetTtlDirCount = g_DirCount 
+	'print "DIR COUNT" + STR$(g_DirCount)
+	'GetTtlDirCount = 0
+	'IF g_DirCount > 0 THEN 
+'		GetTtlDirCount = g_DirCount 
+	'END IF
 END FUNCTION
 
 
@@ -102,7 +105,7 @@ SUB GrabDirs()
                 g_DirCount = g_DirCount + 1
             END IF
         NEXT
-		g_DirCount = g_DirCount - 1
+		'g_DirCount = g_DirCount - 1
     END IF
     CLOSEDIRLIST()
 END SUB
