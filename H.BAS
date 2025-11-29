@@ -225,5 +225,37 @@ FUNCTION FormatFileSize(tmp1$ AS STRING) as STRING
 	FormatFileSize =  strPadL(tmp1$ + " " + tmp2$,10)
 END FUNCTION  
 
+
+SUB DrawBox(top AS INT, left AS INT, height AS INT, width AS INT)
+	'--- Draw a box using text characters
+	'--- Parameters:
+	'---   top: starting row (1-based)
+	'---   left: starting column (1-based)
+	'---   height: box height in rows
+	'---   width: box width in columns
+	
+	DIM hLine$ : hLine$ = RPT$("-", width - 2)
+	
+	'--- Draw top border
+	LOCATE top, left
+	PRINT "+";
+	PRINT hLine$;
+	PRINT "+"
+	
+	'--- Draw middle rows
+	IF height > 2 THEN
+		FOR row = 1 TO height - 2
+			LOCATE top + row, left
+			PRINT "|" + RPT$(" ", width - 2) + "|"
+		NEXT
+	END IF
+	
+	'--- Draw bottom border
+	LOCATE top + height - 1, left
+	PRINT "+";
+	PRINT hLine$;
+	PRINT "+"
+END SUB
+
 #INCLUDE "STR.BAS" 
 

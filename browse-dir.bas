@@ -6,8 +6,9 @@ CONST COL_WIDTH=25  'width of columns with directory items
 CONST rowCount=20   'rows to display on screen
 CONST DEF_INDENT = 2    
 
-SCREEN 8
-ENTERISO    'Goto iso-mode, so we see all filesnames as they are
+rem SCREEN 8
+screen 1
+rem ENTERISO    'Goto iso-mode, so we see all filesnames as they are
 SETINDENT DEF_INDENT
 
 
