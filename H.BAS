@@ -6,9 +6,6 @@
 ' Compile with nxtBasic: https://github.com/unartic/nxtBasic   Windows - CRLF
 '-----------------------------------------------------------------------------------
 
-ENTERISO  '--- Enable ISO character mode for proper box-drawing and international text
-'EXITISO   '--- Disable ISO character mode if needed later	
-
 'GETCOLS: 
 #INCLUDE "CTRL_CODES.BAS" 
 #INCLUDE "COLORS.BAS"
@@ -73,8 +70,6 @@ tmp1$ = REPLACE$("TTL FILES: <F> TTL DIRS: <D>","<F>",STR$(GetTtlFileCount()))
 tmp1$ = REPLACE$(tmp1$,"<D>",STR$(GetTtlDirCount()))
 PRINT REV_ON ; 
 PRINT strPadR(tmp1$,COL_WIDTH) '--- print footer
-DrawBox(5,5,20,20,1,CHARSET_PETSCII) '--- draw a box for fun
-'EXITISO
 END
 
 
@@ -214,5 +209,7 @@ FUNCTION FormatFileSize(tmp1$ AS STRING) as STRING
 END FUNCTION  
 
 #INCLUDE "STR.BAS" 
-#INCLUDE "box-btns.bas"
+'#INCLUDE "box-btns.bas"
 #INCLUDE "system.bas"
+
+
