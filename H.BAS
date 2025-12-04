@@ -6,10 +6,13 @@
 ' Compile with nxtBasic: https://github.com/unartic/nxtBasic   Windows - CRLF
 '-----------------------------------------------------------------------------------
 
+ENTERISO  '--- Enable ISO character mode for proper box-drawing and international text
+'EXITISO   '--- Disable ISO character mode if needed later	
 
 'GETCOLS: 
 #INCLUDE "CTRL_CODES.BAS" 
-#INCLUDE "COLORS.BAS" 
+#INCLUDE "COLORS.BAS"
+
 CONST COL_WIDTH = 39  'width of columns
 
 DIM g_DirCount AS INT : DIM g_DirList$(100) '--- array to store the directory listing. (max 100 in this case)
@@ -70,6 +73,8 @@ tmp1$ = REPLACE$("TTL FILES: <F> TTL DIRS: <D>","<F>",STR$(GetTtlFileCount()))
 tmp1$ = REPLACE$(tmp1$,"<D>",STR$(GetTtlDirCount()))
 PRINT REV_ON ; 
 PRINT strPadR(tmp1$,COL_WIDTH) '--- print footer
+DrawBox(5,5,20,20,1,CHARSET_PETSCII) '--- draw a box for fun
+'EXITISO
 END
 
 
@@ -194,23 +199,6 @@ Function FixUpChars(tmp$ as STRING) as string
 End Function  
 
 
-SUB CheckIsISOorLowerCase()
-	'--- see if we are is ISO mode or PETSCII lower case
-	'--- this NEEDS WORK!!!  but for the moment...
-	'SYSTEM.KEYBOARD.IS.PETSCIILOWER = (PEEK($372) AND 1) = 1
-	'SYSTEM.FONT.GET.IS.ISO.MODE = (PEEK($372) AND %01000000) <> 0)
-	g_isISOorLowerCase = (((PEEK($372) AND %01000000) <> 0) = 0) OR ((PEEK($372) AND 1) = 1)
-	RETURN
-    'IF (((PEEK($372) AND %01000000) <> 0) = 0) OR ((PEEK($372) AND 1) = 1) THEN
-	'	g_isISOorLowerCase = FALSE
-	'ELSE
-	'	g_isISOorLowerCase = TRUE
-	'END IF
-	'RETURN
-END SUB
-
-
-
 FUNCTION FormatFileSize(tmp1$ AS STRING) as STRING
 	C = GETA()
 	IF C = 0 THEN
@@ -225,37 +213,6 @@ FUNCTION FormatFileSize(tmp1$ AS STRING) as STRING
 	FormatFileSize =  strPadL(tmp1$ + " " + tmp2$,10)
 END FUNCTION  
 
-
-SUB DrawBox(top AS INT, left AS INT, height AS INT, width AS INT)
-	'--- Draw a box using text characters
-	'--- Parameters:
-	'---   top: starting row (1-based)
-	'---   left: starting column (1-based)
-	'---   height: box height in rows
-	'---   width: box width in columns
-	
-	DIM hLine$ : hLine$ = RPT$("-", width - 2)
-	
-	'--- Draw top border
-	LOCATE top, left
-	PRINT "+";
-	PRINT hLine$;
-	PRINT "+"
-	
-	'--- Draw middle rows
-	IF height > 2 THEN
-		FOR row = 1 TO height - 2
-			LOCATE top + row, left
-			PRINT "|" + RPT$(" ", width - 2) + "|"
-		NEXT
-	END IF
-	
-	'--- Draw bottom border
-	LOCATE top + height - 1, left
-	PRINT "+";
-	PRINT hLine$;
-	PRINT "+"
-END SUB
-
 #INCLUDE "STR.BAS" 
-
+#INCLUDE "box-btns.bas"
+#INCLUDE "system.bas"
