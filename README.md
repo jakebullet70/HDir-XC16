@@ -7,6 +7,8 @@ On 1st run a H.DAT file is created in the root folder. It can be edited (EDIT "H
 
 I rename my H.PRG to H and put it in the SDCard root. Then you can run it using ^/H and it will execute from any dir.  
 
-<img width="643" height="509" alt="Capture" src="https://github.com/user-attachments/assets/53096e60-3480-4173-9be1-0b49eb1f33a7" />
+<img width="643" height="509" alt="Capture" src="https://github.com/user-attachments/assets/53096e60-3480-4173-9be1-0b49eb1f33a7" />  
+
+FYI: Playing with VS Code Copilat AI.
 
 
