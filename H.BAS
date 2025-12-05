@@ -2,170 +2,150 @@
 ' HotDir for the CX16, Just for fun:     
 '
 '
-' sadLogic / Steve De George SR.   Nov 2025, Kherson Ukraine
+' sadLogic / Steve De George SR.   Nov-Dec 2025, Kherson Ukraine
 ' Compile with nxtBasic: https://github.com/unartic/nxtBasic   Windows - CRLF
 '-----------------------------------------------------------------------------------
 
-'GETCOLS: 
 #INCLUDE "CTRL_CODES.BAS" 
 #INCLUDE "COLORS.BAS"
 
 CONST COL_WIDTH = 39  'width of columns
 
-DIM g_DirCount AS INT : DIM g_DirList$(100) '--- array to store the directory listing. (max 100 in this case)
+'DIM VARS(9), DIM VARS$(9) '--- general purpose vars
+'CONST vFILE_NAME = 0
+
 DIM g_ExtColors$(15)  : DIM g_ExtExt$(15) : DIM g_ExtTTL AS INT '--- color map
 DIM g_isISOorLowerCase AS INT : CheckIsISOorLowerCase()
 
 '--- we try and store the default text foreground color and restore on exit
 DIM g_DefaultColor AS INT : g_DefaultColor = PEEK(886)-96   
-if g_DefaultColor < 0 then print "!!!!DEBUG!!!! COLOR TXT VAR IS WRONG": end
+IF g_DefaultColor < 0 THEN PRINT "!!!!DEBUG!!!! COLOR TXT VAR IS WRONG": end
 
 '--- print header
 PRINT "" 
-tmp1$ = strPadR("HOTDIR CX16 STYLE! V0.1 BETA",COL_WIDTH)   : PRINT REV_ON + tmp1$
-tmp1$ = strPadR(("CURRENT DIR --> " + FixUpChars(CurDir$))  ,COL_WIDTH) : PRINT REV_ON + tmp1$
+g_tmp1$ = strPadR("HOTDIR CX16 STYLE! V0.1 BETA",COL_WIDTH)               : PRINT REV_ON + g_tmp1$
+g_tmp1$ = strPadR(("CURRENT DIR --> " + FixUpChars(CurDir$))  ,COL_WIDTH) : PRINT REV_ON + g_tmp1$
 
 '--- prep
 SetUpFileExtClrs()
-GrabDirs()
 
 '--- start it!
-DIM fname$ : DIM txtColor AS INT
+DIM fname$ 
+DIM g_isDir AS INT
 DIM clearLine$ : clearLine$ = RPT$(" ",COL_WIDTH)
+DIM DirCount AS INT : DIM FileCount AS INT
 
-'--- Print the files and folders
-g_FileCount = DIRLIST("*","*",LIST_ALL)
-FOR ii = 1 to g_FileCount
-	
+'--- Print the folders
+g_isDir = TRUE
+cnt = DIRLIST("*","*",LIST_DIRS)  
+FOR ii = 0 TO cnt - 1
+	fname$ = DIRITEM()
+	'PRINT UCASE$(fname$ )
+	'-- HostFS does not return the . and .. items. hardware/sd card does
+	if fname$ <> "." AND fname$ <> ".." then    
+		fname$ = FixUpChars(fname$)   '--- lcase$ or PETSCII or ??
+		IF LEN(fname$) = 0 THEN 
+			CONTINUE
+		END IF
+		PrintLines(fname$)
+		DirCount = DirCount + 1 '--- adjust count
+	END IF
+NEXT
+CLOSEDIRLIST()
+
+
+'--- Print the files 
+FileCount = DIRLIST("*","*",LIST_FILES)
+g_isDir = false
+FOR ii = 0 to FileCount - 1
 	fname$ = FixUpChars(DIRITEM())   '--- lcase$ or PETSCII or ??
 	IF LEN(fname$) = 0 THEN 
 		CONTINUE
 	END IF
+	PrintLines(fname$)
+NEXT 
+CLOSELIST()
+
+'--- print footer
+g_tmp1$ = REPLACE$("TTL FILES: <F> TTL DIRS: <D>","<F>",STR$(FileCount))
+g_tmp1$ = REPLACE$(g_tmp1$,"<D>",STR$(DirCount))
+PRINT REV_ON ; 
+PRINT strPadR(g_tmp1$,COL_WIDTH) '--- print footer
+END
+
+
+SUB PrintLines(fn$ AS STRING)
 	
-	txtColor = GetColor4Ext(fname$)  '--- get color depending on file ext
-	
+	DIM txtColor AS INT
+	txtColor = GetColor4Ext(fn$)  '--- get color depending on file ext
+	COLOR txtColor 
+	'COLOR GetColor4Ext(fn$) '--- set color based on file ext - ERRORS OUT ON COMPILE
+
 	'--- clear line and print file name
-	COLOR txtColor : PRINT clearLine$ ; 
-	SETCOL 1 : PRINT QUOTES_CHAR + fname$ + QUOTES_CHAR ;
-	
+	PRINT clearLine$ ; 
+	SETCOL 1 : PRINT QUOTES_CHAR + fn$ + QUOTES_CHAR ;
 	
 	'SETCOL 20 : PRINT DIRITEMDATE() + " "; '--- not used
 	'SETCOL 31 : PRINT DIRITEMTIME() + " "; '--- not used
 	'--- print size or DIR
-	SETCOL 22
+	SETCOL 26
 	IF g_isDir THEN
 		PRINT strPadL("<DIR>",10)
 	ELSE
 		PRINT FormatFileSize(STR$(DIRITEMSIZE()))
-		'PRINT "SIZE"
 	END IF
 	' TODO - add all file size together and show
 	COLOR g_DefaultColor '--- restore default color
 	
-NEXT 
-CLOSELIST()
-
-
-tmp1$ = REPLACE$("TTL FILES: <F> TTL DIRS: <D>","<F>",STR$(GetTtlFileCount()))
-tmp1$ = REPLACE$(tmp1$,"<D>",STR$(GetTtlDirCount()))
-PRINT REV_ON ; 
-PRINT strPadR(tmp1$,COL_WIDTH) '--- print footer
-END
-
-
-FUNCTION GetTtlFileCount() AS INT
-	IF g_FileCount = 0 AND g_DirCount = 0 THEN 
-		GetTtlFileCount = 0
-	ELSE
-		GetTtlFileCount = g_FileCount - g_DirCount
-	END IF
-END FUNCTION
-FUNCTION GetTtlDirCount() AS INT
-	GetTtlDirCount = g_DirCount 
-	'print "DIR COUNT" + STR$(g_DirCount)
-	'GetTtlDirCount = 0
-	'IF g_DirCount > 0 THEN 
-'		GetTtlDirCount = g_DirCount 
-	'END IF
-END FUNCTION
+END SUB
 
 
 '============================================================================================
 
-SUB GrabDirs()
-	'--- stuff the DIR's in an array to compare to later
-	g_DirCount = 0
-	cnt = DIRLIST("*","*",LIST_DIRS)  
-    IF cnt > 0 THEN
-        FOR i = 1 TO cnt
-            NewItem$ = DIRITEM()
-			'-- HostFS does not return the . and .. items. hardware/sd card does
-            if NewItem$ <> "." AND NewItem$ <> ".." then    
-                g_DirList$(g_DirCount) = UCASE$(NewItem$)
-                g_DirCount = g_DirCount + 1
-            END IF
-        NEXT
-		'g_DirCount = g_DirCount - 1
-    END IF
-    CLOSEDIRLIST()
-END SUB
-
 
 SUB SetUpFileExtClrs()
+	DIM fnumber AS INT
 	'--- read from H.DAT if it exists  
-	tmp1$ = "14!BAS,14!BL,7!BAT,10!PRG,4!DIR" '--- default colors
-	tmp2$ = "/H.DAT" ' put it in the root for now
-	IF FILEEXISTS(tmp2$) THEN
-		fnumber = OPENFILE(tmp2$,FOR_READ)
-		tmp1$ = LINPUT#(fnumber,chr$(13)) 
+	g_tmp1$ = "14!BAS,14!BL,5!BAT,10!PRG,4!DIR,13!SYM" '--- default colors
+	g_tmp2$ = "/H.DAT" ' put it in the root for now
+	IF FILEEXISTS(g_tmp2$) THEN
+		fnumber = OPENFILE(g_tmp2$,FOR_READ)
+		g_tmp1$ = LINPUT#(fnumber,chr$(13)) 
     ELSE
-		fnumber = OPENFILE(tmp2$,FOR_WRITE)
-		PRINT# fnumber,tmp1$     
+		fnumber = OPENFILE(g_tmp2$,FOR_WRITE)
+		PRINT# fnumber,g_tmp1$     
     END IF   
 	CLOSE fnumber
 	
-	g_ExtTTL = TALLY(tmp1$,",") + 1 
+	g_ExtTTL = TALLY(g_tmp1$,",") + 1 
 	
 	FOR x = 1 TO g_ExtTTL
-		tmp2$ = SPLITITEM$(tmp1$,",",x)
+		g_tmp2$ = SPLITITEM$(g_tmp1$,",",x)
 		'--- g_ExtColors should be an INT but is failing when used with SPLITITEM
 		'--- so we make it a string and VAL it later. logged BUG in GitHub
-		g_ExtColors$(x - 1) = SPLITITEM$(tmp2$,"!",1)
-		g_ExtExt$(x - 1)    = SPLITITEM$(tmp2$,"!",2)  
+		g_ExtColors$(x - 1) = SPLITITEM$(g_tmp2$,"!",1)
+		g_ExtExt$(x - 1)    = SPLITITEM$(g_tmp2$,"!",2)  
 	NEXT
-	'g_ExtColors$(0) = 14   : g_ExtExt$(0) = "BAS"
 END SUB
 
 '=========================================================================
 '=========================================================================
 
 
-SUB isDir(tmp2$ AS STRING)
-	g_isDir = False '--- default to false
-	FOR y = 0 to g_DirCount 
-		'--- compare to DIRs grabbed earlier
-		IF tmp2$ = g_DirList$(y) THEN
-			g_isDir = TRUE
-			BREAK
-		END IF
-	NEXT
-END SUB
 
-
-FUNCTION GetColor4Ext(tmp1$ AS STRING) AS INT
+FUNCTION GetColor4Ext(g_tmp1$ AS STRING) AS INT
 	GetColor4Ext = g_DefaultColor  '--- default to original normal color
 	
-	isDir(tmp1$)
 	IF g_isDir THEN 
-		tmp1$ = "DIR"
+		g_tmp1$ = "DIR"
 	ELSE
-		tmp1$ = GetFileExt(UCASE$(tmp1$)) '--- this is now the file ext 
+		g_tmp1$ = GetFileExt(UCASE$(g_tmp1$)) '--- this is now the file ext 
 	END IF
 	
 	'--- find the color by file ext
 	FOR x = 0 TO g_ExtTTL - 1
-		IF tmp1$ <> "" THEN
-			IF tmp1$ = g_ExtExt$(x) THEN
+		IF g_tmp1$ <> "" THEN
+			IF g_tmp1$ = g_ExtExt$(x) THEN
 				GetColor4Ext = VAL(g_ExtColors$(x)) '--- found!
 				BREAK 
 			END IF
@@ -174,13 +154,13 @@ FUNCTION GetColor4Ext(tmp1$ AS STRING) AS INT
 END FUNCTION  
 
 
-FUNCTION GetFileExt(tmp2$ AS STRING) as STRING
+FUNCTION GetFileExt(g_tmp2$ AS STRING) as STRING
 	'--- get a file ext if it exists
-	x = INSTRREV(tmp2$,".")
+	x = INSTRREV(g_tmp2$,".")
 	if x = 0 THEN 
 		GetFileExt = "" :' no ext found
 	ELSE
-		GetFileExt = RIGHT$(tmp2$,LEN(tmp2$)-x)
+		GetFileExt = RIGHT$(g_tmp2$,LEN(g_tmp2$)-x)
 	END IF	
 END FUNCTION
 
@@ -194,18 +174,18 @@ Function FixUpChars(tmp$ as STRING) as string
 End Function  
 
 
-FUNCTION FormatFileSize(tmp1$ AS STRING) as STRING
+FUNCTION FormatFileSize(g_tmp1$ AS STRING) as STRING
 	C = GETA()
 	IF C = 0 THEN
-		tmp2$ = "B "
+		g_tmp2$ = "B "
 	ELSEIF C = 1 THEN
-		tmp2$ =  "KB"
+		g_tmp2$ =  "KB"
 	ELSEIF C = 2 THEN
-		tmp2$ =  "MB"
+		g_tmp2$ =  "MB"
 	ELSE
-		tmp2$ =  "GB"
+		g_tmp2$ =  "GB"
 	END IF
-	FormatFileSize =  strPadL(tmp1$ + " " + tmp2$,10)
+	FormatFileSize =  strPadL(g_tmp1$ + " " + g_tmp2$,10)
 END FUNCTION  
 
 #INCLUDE "STR.BAS" 
