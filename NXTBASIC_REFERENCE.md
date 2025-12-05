@@ -4,13 +4,14 @@ Quick reference for nxtBasic keywords and functions used in HDir and common Comm
 
 ## Table of Contents
 1. [Variables & Arrays](#variables--arrays)
-2. [String Handling](#string-handling)
-3. [File I/O](#file-io)
-4. [Screen & Display](#screen--display)
-5. [Control Flow](#control-flow)
-6. [Functions & Subroutines](#functions--subroutines)
-7. [Directory Listing API](#directory-listing-api)
-8. [Miscellaneous](#miscellaneous)
+2. [Memory Addressing & Banking](#memory-addressing--banking)
+3. [String Handling](#string-handling)
+4. [File I/O](#file-io)
+5. [Screen & Display](#screen--display)
+6. [Control Flow](#control-flow)
+7. [Functions & Subroutines](#functions--subroutines)
+8. [Directory Listing API](#directory-listing-api)
+9. [Miscellaneous](#miscellaneous)
 
 ---
 
@@ -44,6 +45,124 @@ PushVar(v)
 MySub()              'which modifies v
 v = PullVar()        'retrieve original value
 ```
+
+---
+
+## Memory Addressing & Banking
+
+### Direct Memory Access
+
+nxtBasic provides `PEEK()` and `POKE()` for direct memory access. The Commander X16 memory map is crucial for low-level operations:
+
+```basic
+'Reading memory
+value = PEEK(address)           'Read 1 byte
+value = PEEK(address)           'Can be 0-255 or -128 to 127
+
+'Writing memory
+POKE address, value             'Write 1 byte
+POKEN address, "STRING"         'Write string to memory
+```
+
+### Important Memory Addresses
+
+#### Zero Page (High-Performance Storage)
+
+```basic
+'Banking Control (Zero Page)
+POKE $0000, bank_num            'Set RAM bank (0-255)
+POKE $0001, rom_bank            'Set ROM bank (0-31 = ROM, 32-255 = cartridge)
+
+current_ram = PEEK($0000)       'Read current RAM bank
+current_rom = PEEK($0001)       'Read current ROM bank
+
+'Available for User Code (Zero Page)
+'$0022-$007F: 94 bytes available
+'Use for performance-critical variables
+
+'System Byte (X16-specific)
+$372                            'System settings
+'  Bit 0: PETSCII lowercase flag
+'  Bit 6: ISO character set mode flag
+```
+
+#### Display Memory
+
+```basic
+'Default text color register (used by BASIC)
+default_color = PEEK(886) - 96  'Get current text color
+
+'Example from H.BAS
+DIM g_DefaultColor AS INT : g_DefaultColor = PEEK(886) - 96
+IF g_DefaultColor < 0 THEN 
+    PRINT "!!!!DEBUG!!!! COLOR TXT VAR IS WRONG": END
+END IF
+```
+
+#### I/O Registers
+
+```basic
+'VERA Video Controller ($9F20-$9F3F)
+POKE $9F20, addr_low            'Set VERA address low byte
+POKE $9F21, addr_high           'Set VERA address high byte
+data = PEEK($9F22)              'Read from VERA
+POKE $9F22, data                'Write to VERA
+
+'VIA Controllers ($9F00-$9F0F, $9F10-$9F1F)
+'Used for keyboard, joystick, serial communication
+
+'YM2151 Audio ($9F40-$9F41)
+'2 MHz access speed - use delays after writes
+POKE $9F40, register            'Select register
+POKE $9F41, value               'Write value
+SLEEP 1                         'Allow hardware to process
+```
+
+### Banked RAM Access Pattern
+
+```basic
+'Accessing data in a different RAM bank
+SUB AccessBankedData(bank AS INT)
+    OLD_BANK = PEEK($0000)       'Save current bank
+    POKE $0000, bank             'Switch to target bank
+    
+    'Now access $A000-$BFFF window
+    'This area now shows contents of target bank
+    value = PEEK($A000)          'Read from banked area
+    POKE $A000, value            'Write to banked area
+    
+    POKE $0000, OLD_BANK         'Restore original bank
+END SUB
+```
+
+### Character Mode Detection (HDir Example)
+
+```basic
+'HDir uses PEEK($372) to detect character set mode
+SUB CheckIsISOorLowerCase()
+    mode_byte = PEEK($372)
+    
+    'ISO mode flag (bit 6) OR PETSCII lowercase (bit 0)
+    g_isISOorLowerCase = (((mode_byte AND %01000000) <> 0) OR _
+                          ((mode_byte AND 1) = 1))
+END SUB
+
+'Usage in display logic
+FUNCTION FixUpChars(tmp$ AS STRING) AS STRING
+    IF g_isISOorLowerCase THEN
+        FixUpChars = tmp$        'Keep as-is (ISO supports lowercase)
+    ELSE
+        FixUpChars = UCASE$(tmp$)'Convert to uppercase (PETSCII graphics)
+    END IF
+END FUNCTION
+```
+
+### Memory Performance Tips
+
+- **Zero Page** (`$00-$FF`): Fastest access, 3 CPU cycles for read/write
+- **Fixed RAM** (`$0800-$9EFF`): Standard speed, use for BASIC program
+- **Banked RAM** (`$A000-$BFFF`): Same speed as fixed, but requires bank switching
+- **I/O Registers** (`$9F00-$9FFF`): Variable speed (2-8 MHz depending on device)
 
 ---
 
