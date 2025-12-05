@@ -23,7 +23,8 @@ IF g_DefaultColor < 0 THEN PRINT "!!!!DEBUG!!!! COLOR TXT VAR IS WRONG": end
 
 '--- print header
 PRINT "" 
-g_tmp1$ = strPadR("HOTDIR CX16 STYLE! V0.1 BETA",COL_WIDTH)               : PRINT REV_ON + g_tmp1$
+'PRINT REV_ON + strPadR("HOTDIR CX16 STYLE! V0.2 BETA",COL_WIDTH)  fails to compile
+g_tmp1$ = strPadR("HOTDIR CX16 STYLE! V0.2 BETA",COL_WIDTH)               : PRINT REV_ON + g_tmp1$
 g_tmp1$ = strPadR(("CURRENT DIR --> " + FixUpChars(CurDir$))  ,COL_WIDTH) : PRINT REV_ON + g_tmp1$
 
 '--- prep
